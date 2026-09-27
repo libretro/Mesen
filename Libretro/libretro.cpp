@@ -119,6 +119,7 @@ extern "C" {
 
 		_keyManager.reset(new LibretroKeyManager(_console));
 		_messageManager.reset(new LibretroMessageManager(logCallback, env_cb));
+		MessageManager::SetOsdState(true);
 
 		std::stringstream databaseData;
 		databaseData.write((const char*)MesenDatabase, sizeof(MesenDatabase));

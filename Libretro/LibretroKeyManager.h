@@ -16,6 +16,7 @@ private:
 	bool _mouseButtons[3] = { false, false, false };
 	bool _supportsInputBitmasks = false;
 	bool _wasPushed[16] = { };
+	uint32_t _currentDisk = 0;
 
 	bool ProcessAction(uint32_t button)
 	{
@@ -35,6 +36,20 @@ private:
 			_wasPushed[button] = false;
 		}
 		return false;
+	}
+
+	void ReportDiskChange()
+	{
+		if (_currentDisk & 0x100) {
+			FDS* fds = dynamic_cast<FDS*>(_console->GetMapper());
+			if(fds) {
+				const uint32_t disk = fds->GetCurrentDisk();
+				if(disk != 0xFF && disk != (_currentDisk & 0xFF)) {
+					_currentDisk = disk;
+					MessageManager::DisplayMessage("FDS", "Inserted disk " + std::to_string((disk / 2) + 1) + ((disk & 1) ? " Side B" : " Side A"));
+				}
+			}
+		}
 	}
 
 public:
@@ -94,11 +109,29 @@ public:
 
 			std::shared_ptr<FdsSystemActionManager> fdsSam = _console->GetSystemActionManager<FdsSystemActionManager>();
 			if(fdsSam) {
-				if(ProcessAction(RETRO_DEVICE_ID_JOYPAD_L))
-					fdsSam->InsertNextDisk();
+				if(ProcessAction(RETRO_DEVICE_ID_JOYPAD_L)) {
+					if(!(_currentDisk & 0x100)) { // ignore until previous disk switch completes
+						if(fdsSam->GetSideCount() > 2) { // ignore if multiple disks are not available
+							MessageManager::DisplayMessage("FDS", "Ejected disk");
+							_currentDisk |= 0x100;
+							fdsSam->InsertNextDisk();
+						}
+					}
+				}
 				
-				if(ProcessAction(RETRO_DEVICE_ID_JOYPAD_R))
-					fdsSam->SwitchDiskSide();
+				if(ProcessAction(RETRO_DEVICE_ID_JOYPAD_R)) {
+					if (!(_currentDisk & 0x100)) { // ignore until previous disk switch completes
+						MessageManager::DisplayMessage("FDS", "Ejected disk");
+						FDS* fds = dynamic_cast<FDS*>(_console->GetMapper());
+						if(fds)
+							_currentDisk = fds->GetCurrentDisk() | 0x100;
+						else
+							_currentDisk |= 0x100;
+						fdsSam->SwitchDiskSide();
+					}
+				}
+
+				ReportDiskChange();
 			}
 			
 			std::shared_ptr<VsSystemActionManager> vsSam = _console->GetSystemActionManager<VsSystemActionManager>();
