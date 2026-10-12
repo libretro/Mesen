@@ -18,6 +18,7 @@
 #include "../Core/DebuggerTypes.h"
 #include "../Core/GameDatabase.h"
 #include "../Core/SoundMixer.h"
+#include "../Core/FdsLoader.h"
 #include "../Utilities/FolderUtilities.h"
 #include "../Utilities/HexUtilities.h"
 
@@ -149,6 +150,32 @@ extern "C" {
 		env_cb = env;
 
 		libretro_set_core_options(env_cb, &option_categories);
+
+		//The FDS BIOS is read through the frontend's VFS, so it can see which file was looked for
+		struct retro_vfs_interface_info vfsInfo = { 1, nullptr };
+		if(env_cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &vfsInfo) && vfsInfo.iface) {
+			struct retro_vfs_interface* vfs = vfsInfo.iface;
+			FdsLoader::ReadBiosFile = [vfs](const string& path, vector<uint8_t>& data) {
+				struct retro_vfs_file_handle* file = vfs->open(path.c_str(), RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+				if(!file) {
+					return false;
+				}
+
+				int64_t size = vfs->size(file);
+				data.resize(size > 0 ? (size_t)size : 0);
+				size_t done = 0;
+				while(done < data.size()) {
+					int64_t read = vfs->read(file, data.data() + done, data.size() - done);
+					if(read <= 0) {
+						break;
+					}
+					done += (size_t)read;
+				}
+				data.resize(done);
+				vfs->close(file);
+				return true;
+			};
+		}
 
 		static constexpr struct retro_controller_description pads1[] = {
 			{ "Auto", DEVICE_AUTO },
