@@ -42,10 +42,21 @@ void FdsLoader::AddGaps(vector<uint8_t>& diskSide, uint8_t * readBuffer)
 	}
 }
 
+std::function<bool(const string&, vector<uint8_t>&)> FdsLoader::ReadBiosFile;
+
 vector<uint8_t> FdsLoader::LoadBios()
 {
 	//For FDS, the PRG ROM is the FDS BIOS (8k)
 	vector<uint8_t> biosData;
+
+	if(ReadBiosFile) {
+		for(const char* name : { "FdsBios.bin", "disksys.rom" }) {
+			if(ReadBiosFile(FolderUtilities::CombinePath(FolderUtilities::GetHomeFolder(), name), biosData)) {
+				return biosData;
+			}
+		}
+		return {};
+	}
 
 	ifstream biosFile(FolderUtilities::CombinePath(FolderUtilities::GetHomeFolder(), "FdsBios.bin"), ios::in | ios::binary);
 	if(biosFile) {

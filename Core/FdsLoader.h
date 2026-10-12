@@ -1,5 +1,6 @@
 #pragma once
 #include "stdafx.h"
+#include <functional>
 #include "BaseLoader.h"
 
 struct RomData;
@@ -15,6 +16,9 @@ private:
 
 public:
 	using BaseLoader::BaseLoader;
+
+	//Set by a frontend that reads the BIOS through its own file system, such as the libretro VFS
+	static std::function<bool(const string& path, vector<uint8_t>& data)> ReadBiosFile;
 
 	vector<uint8_t> RebuildFdsFile(vector<vector<uint8_t>> diskData, bool needHeader);
 	void LoadDiskData(vector<uint8_t>& romFile, vector<vector<uint8_t>> &diskData, vector<vector<uint8_t>> &diskHeaders);
