@@ -165,6 +165,34 @@ struct retro_core_option_v2_definition option_defs_us[] = {
       "disabled"
    },
    {
+      "mesen_fdsdiskmessagestyle",
+      "FDS: Disk change message style",
+      NULL,
+      "How disk changes are shown. 'Progress bar' shows a bar that fills over the two-second swap. 'Text only' shows the text alone: 'Ejecting' the side that comes out, then 'Inserting' the side that goes in.",
+      NULL,
+      "system",
+      {
+         { "Progress bar", NULL },
+         { "Text only",    NULL },
+         { NULL, NULL },
+      },
+      "Progress bar"
+   },
+   {
+      "mesen_fdsdiskmessages",
+      "FDS: Disk change messages",
+      NULL,
+      "Which disk changes are announced on screen. 'Disk buttons only' announces swaps made with the Insert Next Disk and Switch Disk Side buttons or the frontend's disk control (Disc Control menu, Next Disc hotkey). 'Verbose' also announces the disk inserted at boot and swaps that finish after loading a state.",
+      NULL,
+      "system",
+      {
+         { "Disk buttons only", NULL },
+         { "Verbose",           NULL },
+         { NULL, NULL },
+      },
+      "Disk buttons only"
+   },
+   {
       "mesen_ntsc_filter",
       "NTSC filter",
       NULL,

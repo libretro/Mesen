@@ -8,13 +8,24 @@ class FdsSystemActionManager : public SystemActionManager
 {
 private:
 	const uint8_t ReinsertDiskFrameDelay = 120;
+	const int32_t SelectedDiskNotSaved = -2;
 
 	std::weak_ptr<FDS> _mapper;
 
 	bool _needEjectDisk = false;
 	uint8_t _insertDiskNumber = 0;
 	uint8_t _insertDiskDelay = 0;
+	int32_t _selectedDisk = 0; //disk control's side for the next insert, -1 for none; L/R's base disk with the drive empty
 	uint32_t _sideCount;
+
+	//A state saved without the selection takes the side in the drive, read once the mapper is loaded and before a pending eject empties it
+	void ResolveSelectedDisk()
+	{
+		if(_selectedDisk == SelectedDiskNotSaved) {
+			std::shared_ptr<FDS> mapper = _mapper.lock();
+			_selectedDisk = mapper && mapper->IsDiskInserted() ? (int32_t)mapper->GetCurrentDisk() : 0;
+		}
+	}
 
 protected:
 	string GetKeyNames() override
@@ -25,7 +36,8 @@ protected:
 	void StreamState(bool saving) override
 	{
 		SystemActionManager::StreamState(saving);
-		Stream(_needEjectDisk, _insertDiskNumber, _insertDiskDelay);
+		ValueInfo<int32_t> selectedDisk = { &_selectedDisk, SelectedDiskNotSaved };
+		Stream(_needEjectDisk, _insertDiskNumber, _insertDiskDelay, selectedDisk);
 	}
 
 public:
@@ -44,6 +56,7 @@ public:
 	void OnAfterSetState() override
 	{
 		SystemActionManager::OnAfterSetState();
+		ResolveSelectedDisk();
 		if(_needEjectDisk) {
 			SetBit(FdsSystemActionManager::FdsButtons::EjectDiskButton);
 			_needEjectDisk = false;
@@ -114,6 +127,42 @@ public:
 				InsertDisk(((mapper->GetCurrentDisk() & 0xFE) + 2) % mapper->GetSideCount());
 			}
 		}
+	}
+
+	bool IsDiskSwapPending()
+	{
+		return _needEjectDisk || _insertDiskDelay > 0;
+	}
+
+	int GetPendingInsertDisk()
+	{
+		return _insertDiskDelay > 0 ? _insertDiskNumber : -1;
+	}
+
+	int GetInsertFramesElapsed()
+	{
+		return ReinsertDiskFrameDelay - _insertDiskDelay;
+	}
+
+	int GetInsertFramesLeft()
+	{
+		return _insertDiskDelay;
+	}
+
+	int GetInsertProgress()
+	{
+		return GetInsertFramesElapsed() * 100 / ReinsertDiskFrameDelay;
+	}
+
+	int GetSelectedDisk()
+	{
+		ResolveSelectedDisk();
+		return _selectedDisk;
+	}
+
+	void SetSelectedDisk(int disk)
+	{
+		_selectedDisk = disk;
 	}
 
 	uint32_t GetSideCount()

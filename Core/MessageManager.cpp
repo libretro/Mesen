@@ -3,6 +3,7 @@
 #include "EmulationSettings.h"
 
 std::list<string> MessageManager::_log;
+bool MessageManager::_osdEnabled = false;
 IMessageManager* MessageManager::_messageManager = nullptr;
 
 void MessageManager::RegisterMessageManager(IMessageManager* messageManager)
@@ -14,6 +15,11 @@ void MessageManager::UnregisterMessageManager(IMessageManager* messageManager)
 {
 	if(MessageManager::_messageManager == messageManager)
 		MessageManager::_messageManager = nullptr;
+}
+
+void MessageManager::SetOsdState(bool enabled)
+{
+	_osdEnabled = enabled;
 }
 
 void MessageManager::DisplayMessage(string title, string message, string param1, string param2)
@@ -31,7 +37,11 @@ void MessageManager::DisplayMessage(string title, string message, string param1,
 		if(startPos != std::string::npos)
 			message.replace(startPos, 2, param2);
 
-		MessageManager::Log("[" + title + "] " + message);
+		if(_osdEnabled) {
+			MessageManager::_messageManager->DisplayMessage(title, message);
+		} else {
+			MessageManager::Log("[" + title + "] " + message);
+		}
 	}
 }
 
