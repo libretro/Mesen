@@ -50,8 +50,13 @@ vector<uint8_t> FdsLoader::LoadBios()
 	vector<uint8_t> biosData;
 
 	if(ReadBiosFile) {
+		//The frontend's system folder can end with either separator
+		string folder = FolderUtilities::GetHomeFolder();
+		if(!folder.empty() && folder.back() != '/' && folder.back() != '\\') {
+			folder += '/';
+		}
 		for(const char* name : { "FdsBios.bin", "disksys.rom" }) {
-			if(ReadBiosFile(FolderUtilities::CombinePath(FolderUtilities::GetHomeFolder(), name), biosData)) {
+			if(ReadBiosFile(folder + name, biosData)) {
 				return biosData;
 			}
 		}

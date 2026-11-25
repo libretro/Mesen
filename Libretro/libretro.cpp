@@ -156,7 +156,7 @@ extern "C" {
 		if(env_cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &vfsInfo) && vfsInfo.iface) {
 			struct retro_vfs_interface* vfs = vfsInfo.iface;
 			FdsLoader::ReadBiosFile = [vfs](const string& path, vector<uint8_t>& data) {
-				//CombinePath() joins with a backslash on Windows, which a strict frontend rejects
+				//A Windows system folder can hold backslashes, which a strict frontend rejects
 				string vfsPath = path;
 				std::replace(vfsPath.begin(), vfsPath.end(), '\\', '/');
 				struct retro_vfs_file_handle* file = vfs->open(vfsPath.c_str(), RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
